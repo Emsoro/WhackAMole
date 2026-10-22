@@ -1,0 +1,14 @@
+# 构建产物
+build/
+TauriCPP/build/
+out/
+*.exe
+*.obj
+*.pdb
+*.ilk
+
+# 本地项目数据
+.codebuddy/
+
+# 文档（本地用，不入库）
+doc/

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打地鼠 · WhackaMole</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 顶栏：木纹 + 计分板 -->
+  <header id="topbar">
+    <div class="hud-chips">
+      <div class="chip chip-score">
+        <label>得分</label>
+        <span id="hud-score">0</span>
+      </div>
+      <div class="chip chip-time">
+        <label>剩余时间</label>
+        <span id="hud-time">1:00</span>
+      </div>
+      <div class="chip chip-combo" id="hud-combo-chip">
+        <label>连击</label>
+        <span id="hud-combo">x1</span>
+      </div>
+    </div>
+    <div class="top-buttons">
+      <button id="btn-pause" class="round-btn" title="暂停 (P)" aria-label="暂停">
+        <span class="ic-pause"></span>
+      </button>
+      <button id="btn-sound" class="round-btn" title="声音开关" aria-label="声音">
+        <svg viewBox="0 0 24 24" width="27" height="27">
+          <g fill="#fff">
+            <path d="M3 9v6h4l5 4V5L7 9H3z"/>
+            <path id="ic-wave" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round"
+                  d="M15 8.5a4.5 4.5 0 0 1 0 7M17.2 6a8 8 0 0 1 0 12"/>
+          </g>
+          <line id="ic-slash" x1="3" y1="3" x2="21" y2="21" stroke="#ff5a4d" stroke-width="2.2"
+                stroke-linecap="round" display="none"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 草地战场 -->
+  <main id="stage-wrap">
+    <canvas id="board"></canvas>
+
+    <!-- 开始菜单 -->
+    <div class="overlay" id="start-overlay">
+      <div class="overlay-card">
+        <h1 class="game-title">打地鼠</h1>
+        <p class="game-sub">在地鼠冒头时快点它们！小心炸弹！</p>
+        <div class="level-list">
+          <button class="level-btn" data-level="0">
+            <b>简单</b><i>慢悠悠的地鼠，60 秒热身</i>
+          </button>
+          <button class="level-btn" data-level="1">
+            <b>普通</b><i>动作更快，还有戴安全帽的硬骨头</i>
+          </button>
+          <button class="level-btn" data-level="2">
+            <b>困难</b><i>手速挑战！炸弹也更多</i>
+          </button>
+        </div>
+        <p class="best-line" id="start-best"></p>
+      </div>
+    </div>
+
+    <!-- 暂停 -->
+    <div class="overlay hidden" id="pause-overlay">
+      <div class="overlay-card">
+        <h2>已暂停</h2>
+        <div class="overlay-actions">
+          <button class="action-btn primary" id="btn-resume">继续游戏</button>
+          <button class="action-btn" id="btn-quit">回到菜单</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结算 -->
+    <div class="overlay hidden" id="over-overlay">
+      <div class="overlay-card">
+        <h2>时间到！</h2>
+        <div class="result-score" id="final-score">0</div>
+        <p class="result-best" id="final-best"></p>
+        <p class="result-note" id="final-note"></p>
+        <div class="overlay-actions">
+          <button class="action-btn primary" id="btn-again">再来一局</button>
+          <button class="action-btn" id="btn-menu">换个难度</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 底栏：道具 -->
+  <footer id="bottombar">
+    <div class="powerups">
+      <button class="powerup" data-pu="0" title="冰冻：全场定住 5 秒 (Q)">
+        <span class="pu-icon pu-freeze">
+          <svg viewBox="0 0 24 24" width="26" height="26">
+            <circle cx="12" cy="13" r="7.5" fill="#5aa7e8" stroke="#2e6fb0" stroke-width="1.6"/>
+            <path d="M12 9v4.4l3 1.8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M12 3.2v2M9.5 3.8L12 5.4l2.5-1.6" stroke="#2e6fb0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="pu-name">冰冻</span>
+        <span class="pu-count" id="pu-count-0">2</span>
+      </button>
+      <button class="powerup" data-pu="1" title="闪电：敲掉场上全部地鼠 (W)">
+        <span class="pu-icon pu-bolt">
+          <svg viewBox="0 0 24 24" width="26" height="26">
+            <path d="M13.5 2L5 13.5h5L9 22l9.5-12h-5.5L13.5 2z" fill="#ffd94d" stroke="#e8940f" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="pu-name">闪电</span>
+        <span class="pu-count" id="pu-count-1">1</span>
+      </button>
+      <button class="powerup" data-pu="2" title="磁铁：疯狂刷怪 8 秒 (E)">
+        <span class="pu-icon pu-magnet">
+          <svg viewBox="0 0 24 24" width="26" height="26">
+            <circle cx="12" cy="12" r="9" fill="#ffc93c" stroke="#d98f13" stroke-width="1.6"/>
+            <circle cx="12" cy="12" r="5.4" fill="#ffe08a" stroke="#d98f13" stroke-width="1.2"/>
+            <path d="M12 8.6c1.9 0 3.4 1.5 3.4 3.4S13.9 15.4 12 15.4" fill="none" stroke="#b36f0a" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="pu-name">磁铁</span>
+        <span class="pu-count" id="pu-count-2">1</span>
+      </button>
+    </div>
+  </footer>
+
+  <div id="hint">在地鼠冒头时快点它们！别碰炸弹 · 金地鼠送道具 · 数字键 1-8 也能敲</div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
